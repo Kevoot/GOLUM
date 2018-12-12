@@ -3,6 +3,7 @@ export enum CellState {
     dead = 1
 }
 
+// Data to be passed to the arduino (not yet in use)
 export enum ModuleState {
     s0 = "0",
     s1 = "1",
@@ -21,3 +22,11 @@ export enum ModuleState {
     s14 = "E",
     s15 = "F"
 }
+
+// To create a valid port command, we need a port number, a function
+// from the port class, and the arguments
+export type PortCommand = {
+    portNumber: number,
+    fn: Function,
+    args: string[]
+};

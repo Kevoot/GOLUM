@@ -2,16 +2,24 @@ import path from "path";
 import { config, ArduinoStatus } from "./config/config";
 import { ArduinoPort } from "./serial/port";
 import { Board } from "./GoL/board";
-import { CellState, ModuleState } from "./types/types";
+import { CellState, ModuleState, PortCommand } from "./types/types";
 
 export let mainGoL: App;
 
 export class App {
+  // from config.ts
   public config;
+
+  // Array of serial comms ports to the arduinos
   public arduinoPorts: ArduinoPort[];
-  public commandBuffer;
+
+  // Stores an array of commands to be executed in an FIFO order
+  // TODO: Extend the array type to ensure safety on this, as using just push/pop would
+  // cause an out of order execution.
+  public commandBuffer: PortCommand[];
+
+  // The grid for GoL
   public board: Board;
-  public numArduinosWorking: number;
 
   constructor() {
     this.config = config;
@@ -19,17 +27,22 @@ export class App {
     this.commandBuffer = [];
 
     this.board = new Board();
-    this.numArduinosWorking = 0;
   }
 
+  /**
+   * Creates an array of new ports to the arduinos based on the available config options
+   */
   public createPortContainer = () => {
     for (let i = 0; i < config.arduinos.length; i++) {
       this.arduinoPorts.push(new ArduinoPort(i));
     }
   }
 
+  /**
+   * Upon an arduino returning a new status, see if we can execute a new command yet
+   */
   public portUpdated = (port: ArduinoPort, status: string) => {
-    // If arduinon is already working, don't send any new commands
+    // If arduino is already working, don't send any new commands
     if (status === ArduinoStatus.CONNECTING || status === ArduinoStatus.UNKNOWN || status === ArduinoStatus.WORKING) {
       return;
     }
@@ -40,27 +53,31 @@ export class App {
     }
     else if (this.commandBuffer.length > 0 && (status === ArduinoStatus.DONE || status === ArduinoStatus.READY )) {
       if (this.canExecute()) {
-        const command = this.commandBuffer.pop();
-        const fn = command.fn;
-        const args = command.args;
-
-        (fn as Function).apply(this.arduinoPorts[command.num], args);
-        console.log("fn: " + fn);
-        console.log("arg info: " + (args[0] === undefined ? "N/A" : args[0]));
+        const command = this.commandBuffer.shift();
+        command.fn.apply(this.arduinoPorts[command.portNumber], command.args);
       }
     }
   }
 
+  /**
+   * Forces a calibration (currently unused)
+   */
   public beginCalibration = () => {
     for (const port of this.arduinoPorts) {
-      this.commandBuffer.push({ num: port.number, fn: port.sendCalibrateCommand, args: undefined });
+      this.commandBuffer.push({ portNumber: port.number, fn: port.sendCalibrateCommand, args: undefined });
     }
   }
 
+  /**
+   * Pushes a new command into the commandBuffer queue
+   */
   public sendModuleData = (port: number, moduleState: ModuleState) => {
-    this.commandBuffer.push({ obj: this.arduinoPorts[port], fn: this.arduinoPorts[port].write, args: [ moduleState ] });
+    this.commandBuffer.push({ portNumber: port, fn: this.arduinoPorts[port].write, args: [ moduleState ] });
   }
 
+  /**
+   * Returns if any commands from the commandBuffer can execute
+   */
   public canExecute = (): boolean => {
     if (this.getWorkingCount() < config.MAX_WORKERS) {
       return true;
@@ -70,6 +87,9 @@ export class App {
     }
   }
 
+  /**
+   * Retrieves the number of arduinos currently working
+   */
   public getWorkingCount = (): number => {
     let workingNum = 0;
 
@@ -82,6 +102,9 @@ export class App {
     return workingNum;
   }
 
+  /**
+   * Test by forcing a value of 7 for the first module and writing to arduino
+   */
   public test = () => {
     this.board.setState(0, 0, CellState.alive);
     this.board.setState(0, 1, CellState.alive);
@@ -94,25 +117,7 @@ export class App {
     const str = "M0S" + dataArray[0][0];
 
     this.sendModuleData(0, (str) as ModuleState );
-
-    /*this.board = new Board();
-    // Should be 1
-    this.board.setState(0, 0, CellState.alive);
-    console.log("Test board 2: \n" + this.board.toString());
-    console.log("Sending data to Buffer\n");
-    dataArray = this.board.toDataArray();
-    this.sendModuleData(0, dataArray[0][0]);
-
-    this.board = new Board();
-    // Should be 3
-    this.board.setState(0, 0, CellState.alive);
-    this.board.setState(0, 1, CellState.alive);
-    console.log("Test board 3: \n" + this.board.toString());
-    console.log("Sending data to Buffer\n");
-    dataArray = this.board.toDataArray();
-    this.sendModuleData(0, dataArray[0][0]);*/
   }
-
 }
 
 export function main() {
@@ -123,19 +128,16 @@ export function main() {
   mainGoL = new App();
 
   mainGoL.createPortContainer();
-  // mainGoL.beginCalibration();
 
-  if (config.debug) {
-    console.log("Created port container");
-  }
+  // mainGoL.test();
 
-  mainGoL.test();
-
+  // Force an update every 5 seconds in case any comms weren't received
   setInterval(function() {
-    console.log("Testing if able to execute");
     if (mainGoL.canExecute()) {
-      console.log("Can execute!");
-      console.log("Command Buffer size: " + mainGoL.commandBuffer.length);
+      if (config.debug) {
+        console.log("Can execute!");
+        console.log("Command Buffer size: " + mainGoL.commandBuffer.length);
+      }
       mainGoL.portUpdated(undefined, ArduinoStatus.READY);
     }
   }, 5000);

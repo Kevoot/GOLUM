@@ -1,5 +1,8 @@
 import { CellState } from "../types/types";
 
+/**
+ * Simple class representing the current status of any given cell on the GoL grid
+ */
 export class Cell {
     public state: CellState;
     constructor(state) {

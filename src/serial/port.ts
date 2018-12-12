@@ -2,8 +2,12 @@ import { getArduinoPort } from "../util/utils";
 import { ArduinoStatus, config, ArduinoCommands } from "../config/config";
 import { mainGoL } from "../app";
 
-const SerialPort = require("serialport");
+import SerialPort from "serialport";
 
+/**
+ * A layer on top of the node serialport library, used for formatting and sending data
+ * to the arduino and setting up callbacks
+ */
 export class ArduinoPort {
     public number: number;
     public port;
@@ -39,10 +43,17 @@ export class ArduinoPort {
         });
     }
 
+    /**
+     * Write string out to arduino
+     */
     public write = (data: string): void => {
         this.port.write(data);
     }
 
+    /**
+     * When data is received, update our status and yield control to the main app to decide
+     * what to do next
+     */
     public handleData = (data: string): void => {
         if (config.debug) {
             console.log("Received Data: " + data);
@@ -78,18 +89,12 @@ export class ArduinoPort {
         mainGoL.portUpdated(this, this.status);
     }
 
+    /**
+     * Sends the calibrate command if uncalibrated, arduino will send back "D" when done.
+     */
     public sendCalibrateCommand = (): void => {
-        if (!this.isCalibrated()) {
-            this.write(ArduinoCommands.CALIBRATE);
-        }
-    }
-
-    public isCalibrated = (): boolean => {
         if (this.status === ArduinoStatus.NOT_CALIBRATED) {
-            return false;
-        }
-        else {
-            return false;
+            this.write(ArduinoCommands.CALIBRATE);
         }
     }
 }
