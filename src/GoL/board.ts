@@ -16,6 +16,17 @@ export class Board {
         }
     }
 
+    public initRandom = () => {
+        for (const cellArr of this.board) {
+            for (const cell of cellArr) {
+                const r = Math.floor((Math.random() * 5) + 1);
+                if (r === 1) {
+                    cell.setState(CellState.alive);
+                }
+            }
+        }
+    }
+
     public setState = (x: number, y: number, state: CellState) => {
         this.board[x][y].setState(state);
     }
@@ -50,7 +61,7 @@ export class Board {
                 }
                 // Cell dies due to overpopulation
                 else if (this.board[i][j].getState() === CellState.alive && (aliveNeighbors > 3)) {
-                    future.setState(i, j, CellState.alive);
+                    future.setState(i, j, CellState.dead);
                 }
                 // A new cell is born
                 else if (this.board[i][j].getState() === CellState.dead && (aliveNeighbors === 3)) {

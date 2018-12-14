@@ -57,6 +57,13 @@ export class App {
         command.fn.apply(this.arduinoPorts[command.portNumber], command.args);
       }
     }
+    else if (this.commandBuffer.length <= 0) {
+      this.board.step();
+      const dataArray = this.board.toDataArray();
+      const str = "M0S" + dataArray[0][0];
+      console.log(this.board.toString());
+      this.sendModuleData(0, (str) as ModuleState );
+    }
   }
 
   /**
@@ -106,7 +113,7 @@ export class App {
    * Test by forcing a value of 7 for the first module and writing to arduino
    */
   public test = () => {
-    this.board.setState(0, 0, CellState.alive);
+    /*this.board.setState(0, 0, CellState.alive);
     this.board.setState(0, 1, CellState.alive);
     this.board.setState(0, 2, CellState.alive);
     // Should be a value of 7
@@ -116,7 +123,8 @@ export class App {
     const dataArray = this.board.toDataArray();
     const str = "M0S" + dataArray[0][0];
 
-    this.sendModuleData(0, (str) as ModuleState );
+    this.sendModuleData(0, (str) as ModuleState );*/
+    this.board.initRandom();
   }
 }
 
@@ -129,7 +137,7 @@ export function main() {
 
   mainGoL.createPortContainer();
 
-  // mainGoL.test();
+  mainGoL.test();
 
   // Force an update every 5 seconds in case any comms weren't received
   setInterval(function() {
