@@ -75,12 +75,12 @@ void resetToZeroPosition(int module) {
   while (buttonState != 1) {
     switch (module) {
       case 0:
-        stepper0.step(-10);
+        stepper0.step(-20);
         buttonState = digitalRead(buttonPin0);
         currentState0 = 0;
         break;
       case 1:
-        stepper1.step(-10);
+        stepper1.step(-20);
         buttonState = digitalRead(buttonPin1);
         currentState1 = 0;
         break;
@@ -105,9 +105,8 @@ void moveStepperToPosition(int module, int targetState) {
           stepper0.step(-((MAX_STATE - currentState0) * stepsPerState));
           resetToZeroPosition(0);
         }
+        stepper0.step(-((targetState - currentState0) * stepsPerState));
         pos0 = stepsPerState * targetState;
-        // negative because the stepper is mounted backwards
-        stepper0.step(-pos0);
         currentState0 = targetState;
       }
       else return;
