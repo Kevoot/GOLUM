@@ -1,6 +1,6 @@
 export enum CellState {
-    alive = 0,
-    dead = 1
+    alive = 1,
+    dead = 0
 }
 
 // Data to be passed to the arduino (not yet in use)

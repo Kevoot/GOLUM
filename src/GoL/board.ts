@@ -19,7 +19,7 @@ export class Board {
     public initRandom = () => {
         for (const cellArr of this.board) {
             for (const cell of cellArr) {
-                const r = Math.floor((Math.random() * 5) + 1);
+                const r = Math.floor((Math.random() * 3) + 1);
                 if (r === 1) {
                     cell.setState(CellState.alive);
                 }
@@ -38,18 +38,21 @@ export class Board {
     public step = () => {
         const future = new Board();
 
-        for (let i = 1; i < config.rows - 1; i++) {
-            for (let j = 1; j < config.columns - 1; j++) {
+        for (let i = 0; i < config.rows; i++) {
+            for (let j = 0; j < config.columns; j++) {
                 // finding no Of Neighbours that are alive
                 let aliveNeighbors = 0;
 
-                // The cell needs to be subtracted from
-                // its neighbours as it was counted before
-                for (let m = -1; m <= 1; m++)
+                for (let m = -1; m <= 1; m++) {
                     for (let n = -1; n <= 1; n++) {
-                        if (this.board[i + m][j + n].getState() === CellState.alive)
-                            aliveNeighbors++;
+                        if (i + m >= 0 && i + m < this.board.length) {
+                            if (j + n >= 0 && j + n < this.board[i].length) {
+                                if (this.board[i + m][j + n].getState() === CellState.alive)
+                                    aliveNeighbors++;
+                            }
+                        }
                     }
+                }
 
                 if (this.board[i][j].getState() === CellState.alive) {
                     aliveNeighbors--;
@@ -90,17 +93,17 @@ export class Board {
     }
 
     toDataArray = () => {
-        console.log("\nEntered toDataArray function call\n");
         const data: ModuleState[][] = [];
 
         for (let j = 0; j < config.rows; j += config.verticalCellsPerModule) {
             const arr: ModuleState[] = [];
             for (let i = 0; i < this.board.length; i++) {
                 let val = 0;
-                val += this.board[i][j].getState() << 0;
-                val += this.board[i][j + 1].getState() << 1;
-                val += this.board[i][j + 2].getState() << 2;
-                val += this.board[i][j + 3].getState() << 3;
+                val += this.board[i][j].isAlive();
+                val += this.board[i][j + 1].isAlive() << 1;
+                val += this.board[i][j + 2].isAlive() << 2;
+                val += this.board[i][j + 3].isAlive() << 3;
+                val = val % 16;
                 arr.push(val.toString(16).toUpperCase() as ModuleState);
             }
             data.push(arr);
