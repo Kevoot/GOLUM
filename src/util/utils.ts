@@ -6,5 +6,5 @@ import { config } from "../config/config";
  * @returns string containing the port name used in a serialport constructor
  */
 export function getArduinoPort(arduino_num: number): string {
-    return config.arduinos[0].arduinoPort;
+    return config.arduinos[arduino_num].arduinoPort;
 }

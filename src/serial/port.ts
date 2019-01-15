@@ -13,10 +13,13 @@ export class ArduinoPort {
     public port;
     public status: string;
     public connected: boolean;
+    public calibrated: boolean;
 
     constructor(number: number) {
         this.number = number;
         this.connected = false;
+        this.calibrated = false;
+        this.status = ArduinoStatus.UNKNOWN;
 
         this.port = new SerialPort(getArduinoPort(number), {
             baudRate: 9600
@@ -58,35 +61,35 @@ export class ArduinoPort {
         if (config.debug) {
             console.log("Received Data: " + data);
         }
-        let newStatus = this.status;
         switch (data.toString()) {
             case "N": {
-                newStatus = ArduinoStatus.NOT_CALIBRATED;
+                this.status = ArduinoStatus.NOT_CALIBRATED;
+                this.calibrated = false;
                 break;
             }
-            case "R": {
-                newStatus = ArduinoStatus.READY;
+            case "C": {
+                this.status = ArduinoStatus.READY;
+                this.calibrated = true;
                 break;
             }
             case "D": {
-                newStatus = ArduinoStatus.DONE;
+                this.status = ArduinoStatus.READY;
                 break;
             }
             case "W": {
-                newStatus = ArduinoStatus.WORKING;
+                this.status = ArduinoStatus.WORKING;
                 break;
             }
             case "U": {
-                newStatus = ArduinoStatus.UNKNOWN;
+                this.status = ArduinoStatus.UNKNOWN;
                 break;
             }
             case "S": {
-                newStatus = ArduinoStatus.STARTED;
+                this.status = ArduinoStatus.STARTED;
                 break;
             }
         }
-        this.status = newStatus;
-        mainGoL.portUpdated(this, this.status);
+        mainGoL.portUpdated(this);
     }
 
     /**

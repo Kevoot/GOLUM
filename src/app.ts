@@ -21,10 +21,14 @@ export class App {
   // The grid for GoL
   public board: Board;
 
+  public running: boolean;
+  public runner;
+
   constructor() {
     this.config = config;
     this.arduinoPorts = [];
     this.commandBuffer = [];
+    this.running = false;
 
     this.board = new Board();
   }
@@ -41,42 +45,50 @@ export class App {
   /**
    * Upon an arduino returning a new status, see if we can execute a new command yet
    */
-  public portUpdated = (port: ArduinoPort, status: string) => {
-    // If arduino is already working, don't send any new commands
-    if (status === ArduinoStatus.CONNECTING || status === ArduinoStatus.UNKNOWN || status === ArduinoStatus.WORKING) {
-      return;
-    }
-
-    // If an arduino just completed a command, then send the next one
-    if (status === ArduinoStatus.NOT_CALIBRATED) {
+  public portUpdated = (port: ArduinoPort) => {
+    if (port.status === ArduinoStatus.NOT_CALIBRATED) {
       port.sendCalibrateCommand();
+      console.log("Sent calibration command");
     }
-    else if (this.commandBuffer.length > 0 && (status === ArduinoStatus.DONE || status === ArduinoStatus.READY )) {
+    // If the arduino completes calibration or finishes a task, set off an update task.
+    else if (port.status === ArduinoStatus.READY) {
+      // Since we finished a task, set off a new one.
+      this.runner = setInterval(function () {
+        if (mainGoL.canExecute() && mainGoL.isCalibrationComplete()) {
+          if (config.debug) {
+            console.log("200ms update");
+          }
+          mainGoL.runUpdate();
+        }
+      }, 200);
+    }
+  }
+
+  public runUpdate = (): void => {
+    if (this.commandBuffer.length > 0) {
       if (this.canExecute()) {
         const command = this.commandBuffer.shift();
         // If the arduino next in the queue is still working, send it to the back of the queue
-        if (this.arduinoPorts[command.portNumber].status === ArduinoStatus.WORKING) {
+        if (this.arduinoPorts[command.portNumber].status !== ArduinoStatus.READY) {
           this.commandBuffer.push(command);
         }
         else {
-          this.arduinoPorts[command.portNumber].status = ArduinoStatus.WORKING;
           command.fn.apply(this.arduinoPorts[command.portNumber], command.args);
         }
+        console.log("Size of command buffer: " + this.commandBuffer.length);
       }
     }
     else if (this.commandBuffer.length <= 0 && this.getWorkingCount() < 1) {
       this.board.step();
-      const dataArray = this.board.toDataArray();
-      const str = "M0S" + dataArray[0][0];
-      console.log(this.board.toString());
-      this.sendModuleData(0, (str) as ModuleState );
+      this.sendDataArray(this.board.toDataArray());
     }
+    clearInterval(this.runner);
   }
 
   /**
    * Forces a calibration (currently unused)
    */
-  public beginCalibration = () => {
+  public beginCalibration = (): void => {
     for (const port of this.arduinoPorts) {
       this.commandBuffer.push({ portNumber: port.number, fn: port.sendCalibrateCommand, args: undefined });
     }
@@ -85,8 +97,42 @@ export class App {
   /**
    * Pushes a new command into the commandBuffer queue
    */
-  public sendModuleData = (port: number, moduleState: ModuleState) => {
-    this.commandBuffer.push({ portNumber: port, fn: this.arduinoPorts[port].write, args: [ moduleState ] });
+  public sendModuleData = (port: number, targetState: string): void => {
+    if (this.arduinoPorts[port]) {
+      this.commandBuffer.push({ portNumber: port, fn: this.arduinoPorts[port].write, args: [targetState] });
+    }
+  }
+
+  public sendDataArray = (dataArray: ModuleState[][]): void => {
+    console.log(this.board.toString());
+
+    let currentArduino = 0;
+    let counter = 0;
+    let packet = [];
+
+    for (let i = 0; i < (config.rows / config.verticalCellsPerModule); i++) {
+      for (let j = 0; j < config.columns; j++) {
+        packet.push("M" + counter + "S" + dataArray[i][j]);
+        counter++;
+        if (counter === config.NUM_MODULES_PER_ARDUINO) {
+          // Submit each module the arduino is responsible for immediate processing or submission to command buffer
+          for (const str of packet) {
+            this.sendModuleData(currentArduino, str);
+          }
+          packet = [];
+          counter = 0;
+          currentArduino++;
+        }
+      }
+    }
+
+    // Have to send one more time for the leftover data since the last arduino may not
+    // have the max number of modules
+    if (packet.length > 0) {
+      for (const str of packet) {
+        this.sendModuleData(currentArduino, str);
+      }
+    }
   }
 
   /**
@@ -99,6 +145,15 @@ export class App {
     else {
       return false;
     }
+  }
+
+  public isCalibrationComplete = (): boolean => {
+    for (const port of this.arduinoPorts) {
+      if (!port.calibrated) {
+        return false;
+      }
+    }
+    return true;
   }
 
   /**
@@ -169,19 +224,6 @@ export function main() {
   mainGoL.createPortContainer();
 
   mainGoL.test();
-
-  // Force an update every 5 seconds in case any comms weren't received
-  setInterval(function() {
-    if (mainGoL.canExecute()) {
-      if (config.debug) {
-        console.log("Can execute!");
-        console.log("Command Buffer size: " + mainGoL.commandBuffer.length);
-      }
-      mainGoL.portUpdated(undefined, ArduinoStatus.READY);
-    }
-  }, 3000);
-
-  return 0;
 }
 
 main();

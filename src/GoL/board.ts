@@ -7,9 +7,9 @@ export class Board {
 
     constructor() {
         this.board = [];
-        for (let i = 0; i < config.rows; i++) {
+        for (let i = 0; i < config.columns; i++) {
             const arr = [];
-            for (let j = 0; j < config.columns; j++) {
+            for (let j = 0; j < config.rows; j++) {
                 arr.push(new Cell(CellState.dead));
             }
             this.board.push(arr);
@@ -38,15 +38,15 @@ export class Board {
     public step = () => {
         const future = new Board();
 
-        for (let i = 0; i < config.rows; i++) {
-            for (let j = 0; j < config.columns; j++) {
+        for (let i = 0; i < config.columns; i++) {
+            for (let j = 0; j < config.rows; j++) {
                 // finding no Of Neighbours that are alive
                 let aliveNeighbors = 0;
 
                 for (let m = -1; m <= 1; m++) {
                     for (let n = -1; n <= 1; n++) {
-                        if (i + m >= 0 && i + m < this.board.length) {
-                            if (j + n >= 0 && j + n < this.board[i].length) {
+                        if (i + m >= 0 && i + m < config.columns) {
+                            if (j + n >= 0 && j + n < config.rows) {
                                 if (this.board[i + m][j + n].getState() === CellState.alive)
                                     aliveNeighbors++;
                             }
@@ -97,7 +97,7 @@ export class Board {
 
         for (let j = 0; j < config.rows; j += config.verticalCellsPerModule) {
             const arr: ModuleState[] = [];
-            for (let i = 0; i < this.board.length; i++) {
+            for (let i = 0; i < config.columns; i++) {
                 let val = 0;
                 val += this.board[i][j].isAlive();
                 val += this.board[i][j + 1].isAlive() << 1;
