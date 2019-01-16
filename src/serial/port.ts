@@ -100,4 +100,13 @@ export class ArduinoPort {
             this.write(ArduinoCommands.CALIBRATE);
         }
     }
+
+    public quit = (): void => {
+        this.port.on("data", this.sendQuitSignal);
+        this.sendQuitSignal();
+    }
+
+    private sendQuitSignal = (): void => {
+        this.port.write(ArduinoCommands.STOP);
+    }
 }

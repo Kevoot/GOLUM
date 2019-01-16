@@ -41,7 +41,7 @@ export const ArduinoStatus = {
 
 export const ArduinoCommands = {
     CALIBRATE: "C",
-    STOP: "S",
+    STOP: "Q",
     MOVE: "M"
 };
 

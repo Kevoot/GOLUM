@@ -1,5 +1,5 @@
 import path from "path";
-import { config, ArduinoStatus } from "./config/config";
+import { config, ArduinoStatus, ArduinoCommands } from "./config/config";
 import { ArduinoPort } from "./serial/port";
 import { Board } from "./GoL/board";
 import { CellState, ModuleState, PortCommand } from "./types/types";
@@ -76,16 +76,11 @@ export class App {
     }
     else if (this.commandBuffer.length <= 0 && this.getWorkingCount() < 1) {
 
-      // (function foo() {
-        (function run() {
-          mainGoL.board.step();
-          mainGoL.sendDataArray(mainGoL.board.toDataArray());
-          setTimeout(run, config.stepWait);
-        })();
-      // })();
-
-      // this.board.step();
-      // this.sendDataArray(mainGoL.board.toDataArray());
+      this.stepWorker = (function run() {
+        mainGoL.board.step();
+        mainGoL.sendDataArray(mainGoL.board.toDataArray());
+        setTimeout(run, config.stepWait);
+      })();
     }
     if (!this.canExecute()) {
       clearInterval(this.workers.pop());
@@ -193,6 +188,19 @@ export class App {
     return workingNum;
   }
 
+  public shutDown = (): void => {
+    for (const worker of mainGoL.workers) {
+      clearInterval(worker);
+    }
+    clearTimeout(mainGoL.stepWorker);
+    (function stop() {
+      for (const port of mainGoL.arduinoPorts) {
+        port.quit();
+      }
+      setTimeout(stop, 10000);
+    })();
+  }
+
   /**
    * Test by forcing a value of 7 for the first module and writing to arduino
    */
@@ -236,7 +244,7 @@ export class App {
   }
 }
 
-export function main() {
+export function run() {
   if (config.debug) {
     console.log("Starting nodeGoL");
   }
@@ -248,4 +256,7 @@ export function main() {
   mainGoL.test();
 }
 
-main();
+export function stop() {
+  mainGoL.shutDown();
+  mainGoL = undefined;
+}

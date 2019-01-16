@@ -65,7 +65,7 @@
 #define IN10_4  49
 
 int buttonPins[11] = {
-  2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12
+  2, 2, 4, 5, 6, 7, 8, 9, 10, 11, 12
 };
 
 const int stepsPerMotorRevolution = 32;  //No of steps per internal revolution of motor,
@@ -211,6 +211,9 @@ void loop() {
         // Once done, let the controller know we're good to go
         Serial.write('C');
       }
+      else if (c == 'Q') {
+        exit(0);
+      }
     }
   }
 
@@ -234,6 +237,9 @@ void loop() {
       delay(200);
       // Always let controller know when we're done.
       Serial.write('D');
+    }
+    else if (input[0] == 'Q') {
+      exit(0);
     }
   }
 }
