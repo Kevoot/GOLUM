@@ -95,7 +95,7 @@ export class Board {
     toDataArray = () => {
         const data: ModuleState[][] = [];
 
-        for (let j = 0; j < config.rows; j += config.verticalCellsPerModule) {
+        for (let j = 0; j < config.rows; j += config.CELLS_PER_MODULE) {
             const arr: ModuleState[] = [];
             for (let i = 0; i < config.columns; i++) {
                 let val = 0;

@@ -22,13 +22,15 @@ export class App {
   public board: Board;
 
   public running: boolean;
-  public runner;
+  public workers;
+  public stepWorker;
 
   constructor() {
     this.config = config;
     this.arduinoPorts = [];
     this.commandBuffer = [];
     this.running = false;
+    this.workers = [];
 
     this.board = new Board();
   }
@@ -48,19 +50,13 @@ export class App {
   public portUpdated = (port: ArduinoPort) => {
     if (port.status === ArduinoStatus.NOT_CALIBRATED) {
       port.sendCalibrateCommand();
-      console.log("Sent calibration command");
     }
     // If the arduino completes calibration or finishes a task, set off an update task.
     else if (port.status === ArduinoStatus.READY) {
       // Since we finished a task, set off a new one.
-      this.runner = setInterval(function () {
-        if (mainGoL.canExecute() && mainGoL.isCalibrationComplete()) {
-          if (config.debug) {
-            console.log("200ms update");
-          }
-          mainGoL.runUpdate();
-        }
-      }, 200);
+      if (this.workers.length <= config.MAX_WORKERS) {
+        this.submitWorker(config.workerWait);
+      }
     }
   }
 
@@ -75,14 +71,37 @@ export class App {
         else {
           command.fn.apply(this.arduinoPorts[command.portNumber], command.args);
         }
-        console.log("Size of command buffer: " + this.commandBuffer.length);
+        config.debug ? console.log("Size of command buffer: " + this.commandBuffer.length) : undefined;
       }
     }
     else if (this.commandBuffer.length <= 0 && this.getWorkingCount() < 1) {
-      this.board.step();
-      this.sendDataArray(this.board.toDataArray());
+
+      // (function foo() {
+        (function run() {
+          mainGoL.board.step();
+          mainGoL.sendDataArray(mainGoL.board.toDataArray());
+          setTimeout(run, config.stepWait);
+        })();
+      // })();
+
+      // this.board.step();
+      // this.sendDataArray(mainGoL.board.toDataArray());
     }
-    clearInterval(this.runner);
+    if (!this.canExecute()) {
+      clearInterval(this.workers.pop());
+    }
+  }
+
+
+  public submitWorker = (timeout: number): void => {
+    this.workers.push(setInterval(function () {
+      if (mainGoL.canExecute() && mainGoL.isCalibrationComplete()) {
+        if (config.debug) {
+          console.log("200ms update");
+        }
+        mainGoL.runUpdate();
+      }
+    }, timeout));
   }
 
   /**
@@ -110,7 +129,7 @@ export class App {
     let counter = 0;
     let packet = [];
 
-    for (let i = 0; i < (config.rows / config.verticalCellsPerModule); i++) {
+    for (let i = 0; i < (config.rows / config.CELLS_PER_MODULE); i++) {
       for (let j = 0; j < config.columns; j++) {
         packet.push("M" + counter + "S" + dataArray[i][j]);
         counter++;
@@ -139,6 +158,9 @@ export class App {
    * Returns if any commands from the commandBuffer can execute
    */
   public canExecute = (): boolean => {
+    if (this.getWorkingCount() > 0) {
+      const thing = 0;
+    }
     if (this.getWorkingCount() < config.MAX_WORKERS) {
       return true;
     }

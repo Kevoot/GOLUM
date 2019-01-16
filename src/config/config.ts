@@ -1,9 +1,10 @@
 export let config = {
     rows: 24,
     columns: 14,
-    waitTime: 0,
+    workerWait: 100,
+    stepWait: 2000,
     generation: 0,
-    verticalCellsPerModule: 4,
+    CELLS_PER_MODULE: 4,
     ip: "127.0.0.1",
     port: 41234,
     onTime: "0800",
@@ -18,7 +19,7 @@ export let config = {
              arduinoNumber: 1
         }
     ],
-    debug: true,
+    debug: false,
     NUM_MODULES_PER_ARDUINO: 11,
     NUM_SERIAL_ROWS: 6,
     NUM_SERIAL_COLUMNS: 14,
