@@ -10,7 +10,7 @@ import SerialPort from "serialport";
  */
 export class ArduinoPort {
     public number: number;
-    public port;
+    public port: SerialPort;
     public status: string;
     public connected: boolean;
     public calibrated: boolean;
@@ -50,7 +50,14 @@ export class ArduinoPort {
      * Write string out to arduino
      */
     public write = (data: string): void => {
-        this.port.write(data);
+        if (this.port.isOpen) {
+            try {
+                this.port.write(data);
+            }
+            catch (exception) {
+                console.log(exception);
+            }
+        }
     }
 
     /**
@@ -102,11 +109,12 @@ export class ArduinoPort {
     }
 
     public quit = (): void => {
-        this.port.on("data", this.sendQuitSignal);
         this.sendQuitSignal();
     }
 
     private sendQuitSignal = (): void => {
-        this.port.write(ArduinoCommands.STOP);
+        if (this.port.isOpen) {
+            this.port.close();
+        }
     }
 }

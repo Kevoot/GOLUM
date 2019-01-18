@@ -13,11 +13,11 @@ export let config = {
         {
             arduinoPort: "COM3",
             arduinoNumber: 0,
-        },
+        }/*,
         {
              arduinoPort: "COM8",
              arduinoNumber: 1
-        }
+        }*/
     ],
     debug: false,
     NUM_MODULES_PER_ARDUINO: 11,

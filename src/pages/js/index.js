@@ -4,6 +4,23 @@ let currentSelection = 0;
 let disableInputFlag = false;
 let inputTimeout;
 
+const JOY_UP = 1;
+const JOY_DOWN = -1;
+const JOY_LEFT = 1;
+const JOY_RIGHT = -1;
+
+const BTN_SELECT_INDEX = 4;
+const BTN_BACK_INDEX = 6;
+
+// gamepad info:
+// button 4: select (L1 on pin connection)
+// button 6: back (L2 on pin connection)
+// joystick:
+// up: axes[1] === 1
+// down: axes[1] === -1
+// left: axes[0] === 1
+// right: axes[0] === -1
+
 $(document).ready(function () {
     $("#overlay0").toggleClass("projectSelected");
 });
@@ -94,6 +111,26 @@ function updateStatus() {
         var controller = controllers[j];
         // var d = document.getElementById("controller" + j);
         // var buttons = d.getElementsByClassName("button");
+        if (controller.buttons) {
+            if (controller.buttons[BTN_BACK_INDEX].pressed) {
+                history.go(-1);
+            }
+            else if (controller.buttons[BTN_SELECT_INDEX].pressed) {
+                let link = $("#overlay" + currentSelection).children()[0].href
+                if (link !== undefined) {
+                    location.href = link;
+                }
+            }
+        }
+
+        if (controller.axes && !disableInputFlag) {
+            if (controller.axes[0] === JOY_LEFT) {
+                move("L");
+            }
+            else if (controller.axes[0] === JOY_RIGHT) {
+                move("R");
+            }
+        }
 
         for (i = 0; i < controller.buttons.length; i++) {
             // var b = buttons[i];
@@ -112,15 +149,6 @@ function updateStatus() {
             } else {
                 b.className = "button";
             }*/
-
-            if (controller.axes && !disableInputFlag) {
-                if (controller.axes[0] === 1) {
-                    move("L");
-                }
-                else if (controller.axes[0] === -1) {
-                    move("R");
-                }
-            }
         }
 
         /*var axes = d.getElementsByClassName("axis");

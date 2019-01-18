@@ -23,7 +23,8 @@ export class App {
 
   public running: boolean;
   public workers;
-  public stepWorker;
+  public stepWorker: NodeJS.Timer;
+  public quitRequested: boolean;
 
   constructor() {
     this.config = config;
@@ -31,6 +32,7 @@ export class App {
     this.commandBuffer = [];
     this.running = false;
     this.workers = [];
+    this.quitRequested = false;
 
     this.board = new Board();
   }
@@ -61,29 +63,32 @@ export class App {
   }
 
   public runUpdate = (): void => {
-    if (this.commandBuffer.length > 0) {
-      if (this.canExecute()) {
-        const command = this.commandBuffer.shift();
-        // If the arduino next in the queue is still working, send it to the back of the queue
-        if (this.arduinoPorts[command.portNumber].status !== ArduinoStatus.READY) {
-          this.commandBuffer.push(command);
+    if (!this.quitRequested) {
+      if (this.commandBuffer.length > 0) {
+        if (this.canExecute()) {
+          const command = this.commandBuffer.shift();
+          // If the arduino next in the queue is still working, send it to the back of the queue
+          if (this.arduinoPorts[command.portNumber].status !== ArduinoStatus.READY) {
+            this.commandBuffer.push(command);
+          }
+          else {
+            command.fn.apply(this.arduinoPorts[command.portNumber], command.args);
+          }
+          config.debug ? console.log("Size of command buffer: " + this.commandBuffer.length) : undefined;
         }
-        else {
-          command.fn.apply(this.arduinoPorts[command.portNumber], command.args);
-        }
-        config.debug ? console.log("Size of command buffer: " + this.commandBuffer.length) : undefined;
       }
-    }
-    else if (this.commandBuffer.length <= 0 && this.getWorkingCount() < 1) {
-
-      this.stepWorker = (function run() {
-        mainGoL.board.step();
-        mainGoL.sendDataArray(mainGoL.board.toDataArray());
-        setTimeout(run, config.stepWait);
-      })();
-    }
-    if (!this.canExecute()) {
-      clearInterval(this.workers.pop());
+      else if (this.commandBuffer.length <= 0 && this.getWorkingCount() < 1) {
+        if (!this.stepWorker) {
+          (function run() {
+            mainGoL.board.step();
+            mainGoL.sendDataArray(mainGoL.board.toDataArray());
+            mainGoL.stepWorker = setTimeout(run, config.stepWait);
+          })();
+        }
+      }
+      if (!this.canExecute()) {
+        clearInterval(this.workers.pop());
+      }
     }
   }
 
@@ -112,7 +117,7 @@ export class App {
    * Pushes a new command into the commandBuffer queue
    */
   public sendModuleData = (port: number, targetState: string): void => {
-    if (this.arduinoPorts[port]) {
+    if (this.arduinoPorts[port] && !this.quitRequested) {
       this.commandBuffer.push({ portNumber: port, fn: this.arduinoPorts[port].write, args: [targetState] });
     }
   }
@@ -189,58 +194,16 @@ export class App {
   }
 
   public shutDown = (): void => {
+    this.quitRequested = true;
+
     for (const worker of mainGoL.workers) {
       clearInterval(worker);
     }
+
     clearTimeout(mainGoL.stepWorker);
-    (function stop() {
-      for (const port of mainGoL.arduinoPorts) {
+    for (const port of mainGoL.arduinoPorts) {
         port.quit();
       }
-      setTimeout(stop, 10000);
-    })();
-  }
-
-  /**
-   * Test by forcing a value of 7 for the first module and writing to arduino
-   */
-  public test = () => {
-    /* this.board.setState(0, 0, CellState.alive);
-    this.board.setState(0, 1, CellState.alive);
-    this.board.setState(0, 2, CellState.alive);
-    this.board.setState(0, 3, CellState.dead);
-    // Should be a value of 7
-    console.log("Test board 1: \n" + this.board.toString());
-
-    let dataArray = this.board.toDataArray();
-    let str = "M0S" + dataArray[0][0];
-
-    this.sendModuleData(0, (str) as ModuleState );
-
-    this.board.setState(0, 0, CellState.dead);
-    this.board.setState(0, 1, CellState.alive);
-    this.board.setState(0, 2, CellState.alive);
-    this.board.setState(0, 3, CellState.alive);
-    // Should be a value of 14
-    console.log("Test board 2: \n" + this.board.toString());
-
-    dataArray = this.board.toDataArray();
-    str = "M0S" + dataArray[0][0];
-
-    this.sendModuleData(0, (str) as ModuleState );
-
-    this.board.setState(0, 0, CellState.alive);
-    this.board.setState(0, 1, CellState.dead);
-    this.board.setState(0, 2, CellState.dead);
-    this.board.setState(0, 3, CellState.dead);
-    // Should be a value of 1
-    console.log("Test board 2: \n" + this.board.toString());
-
-    dataArray = this.board.toDataArray();
-    str = "M0S" + dataArray[0][0];
-
-    this.sendModuleData(0, (str) as ModuleState );*/
-    this.board.initRandom();
   }
 }
 
@@ -253,7 +216,7 @@ export function run() {
 
   mainGoL.createPortContainer();
 
-  mainGoL.test();
+  mainGoL.board.initRandom();
 }
 
 export function stop() {

@@ -65,7 +65,7 @@
 #define IN10_4  49
 
 int buttonPins[11] = {
-  2, 2, 4, 5, 6, 7, 8, 9, 10, 11, 12
+  2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12
 };
 
 const int stepsPerMotorRevolution = 32;  //No of steps per internal revolution of motor,
