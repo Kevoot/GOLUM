@@ -64,7 +64,12 @@ export class App {
 
   public runUpdate = (): void => {
     if (!this.quitRequested) {
+      // console.log("In runUpdate, num workers: " + this.getWorkingCount());
       if (this.commandBuffer.length > 0) {
+
+        clearTimeout(this.stepWorker);
+        this.stepWorker = undefined;
+
         if (this.canExecute()) {
           const command = this.commandBuffer.shift();
           // If the arduino next in the queue is still working, send it to the back of the queue
@@ -158,9 +163,6 @@ export class App {
    * Returns if any commands from the commandBuffer can execute
    */
   public canExecute = (): boolean => {
-    if (this.getWorkingCount() > 0) {
-      const thing = 0;
-    }
     if (this.getWorkingCount() < config.MAX_WORKERS) {
       return true;
     }
