@@ -6,7 +6,7 @@ import psTree = require("ps-tree");
 export function kill (pid, signal?, callback?) {
     signal   = signal || "SIGKILL";
     callback = callback || function () {};
-    var killTree = true;
+    const killTree = true;
     if (killTree) {
         psTree(pid, function (err, children) {
             [pid].concat(
