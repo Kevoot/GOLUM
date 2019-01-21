@@ -238,6 +238,14 @@ void loop() {
       // Always let controller know when we're done.
       Serial.write('D');
     }
+    // Recalibrate
+    else if (input[0] == 'C') {
+      Serial.write('W');
+      calibrateMotors();
+      calibrated = true;
+      // Once done, let the controller know we're good to go
+      Serial.write('C');
+    }
     else if (input[0] == 'Q') {
       exit(0);
     }

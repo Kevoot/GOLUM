@@ -103,18 +103,21 @@ export class ArduinoPort {
      * Sends the calibrate command if uncalibrated, arduino will send back "D" when done.
      */
     public sendCalibrateCommand = (): void => {
-        if (this.status === ArduinoStatus.NOT_CALIBRATED) {
+        if (this.status === ArduinoStatus.NOT_CALIBRATED && this.port.isOpen) {
             this.write(ArduinoCommands.CALIBRATE);
         }
     }
 
     public quit = (): void => {
-        this.sendQuitSignal();
+        if (this.port.isOpen) {
+            this.port.flush();
+            this.port.close();
+        }
     }
 
-    private sendQuitSignal = (): void => {
-        if (this.port.isOpen) {
-            this.port.close();
+    public open = (): void => {
+        if (!this.port.isOpen) {
+            this.port.open();
         }
     }
 }

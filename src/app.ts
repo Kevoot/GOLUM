@@ -225,3 +225,5 @@ export function stop() {
   mainGoL.shutDown();
   mainGoL = undefined;
 }
+
+run();
