@@ -25,7 +25,6 @@
     "watch-debug": "concurrently -k -p \"[{name}]\" -n \"Sass,TypeScript,Node\" -c \"yellow.bold,cyan.bold,green.bold\" \"npm run watch-sass\" \"npm run watch-ts\" \"npm run serve-debug\""
   },
   "dependencies": {
-    "@types/serialport": "^7.0.0",
     "async": "^2.6.0",
     "bcrypt-nodejs": "^0.0.3",
     "bluebird": "^3.5.1",
@@ -61,6 +60,7 @@
     "@types/node": "^9.4.6",
     "@types/ps-tree": "^1.1.0",
     "@types/request": "^2.47.0",
+    "@types/serialport": "^7.0.0",
     "@types/shelljs": "^0.7.8",
     "@types/supertest": "^2.0.4",
     "@types/winston": "^2.3.7",

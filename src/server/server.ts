@@ -34,6 +34,9 @@ class Server {
         this.express = express();
         this.mountRoutes();
         this.appInstance = spawn("node", ["../app.js"]);
+        this.appInstance.on("error", function (err) {
+            console.log(err);
+        });
     }
 
     private mountRoutes(): void {
@@ -41,23 +44,15 @@ class Server {
         router.get("/", (req, res) => {
             res.sendFile(path.join(__dirname + "/public/index.html"));
         });
-        /*router.get("/running.html", (req, res) => {
-            try {
-                res.sendFile(path.join(__dirname + "/public/running.html"));
-                run();
-            }
-            catch (ex) {
-                console.log(ex);
-            }
+        router.get("/credits.html", (req, res) => {
+            res.sendFile(path.join(__dirname + "/public/credits.html"));
         });
-        router.get("/stop", (req, res) => {
-            try {
-                stop();
-            }
-            catch (ex) {
-                console.log(ex);
-            }
-        });*/
+        router.get("/projectinformation.html", (req, res) => {
+            res.sendFile(path.join(__dirname + "/public/projectinformation.html"));
+        });
+        router.get("/softwareinformation.html", (req, res) => {
+            res.sendFile(path.join(__dirname + "/public/softwareinformation.html"));
+        });
         this.express.post("/randomize", (req, res) => {
             try {
                 console.log("***Randomizing***");

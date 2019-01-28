@@ -23,6 +23,13 @@ body {
     grid-template-columns: repeat(4, 1fr);
 }
 
+.creditscontainer, .projinfocontainer, .softwareinfocontainer {
+    color: rgb(255, 255, 255);
+    width: 80%;
+    margin: 0px auto;
+    vertical-align: center;
+}
+
 /* override bootstrap default to remove space in grid layout*/
 .container::before {
     display: none;
