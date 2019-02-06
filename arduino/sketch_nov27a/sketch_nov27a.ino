@@ -1,9 +1,11 @@
 #include <Stepper.h>
 
 // Every Arduino MUST have a unique serial!
-#define SERIAL_NUM "I0"
+#define SERIAL_NUM "I5"
 
-#define NUM_MODULES 1
+#define RUNNING_SPEED 900
+
+#define NUM_MODULES 12
 // On completion each arduino will control 12 modules. For now, set to 2 for testing
 // #define NUM_MODULES 11
 
@@ -64,8 +66,13 @@
 #define IN10_3  48
 #define IN10_4  49
 
-int buttonPins[11] = {
-  2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12
+#define IN11_1 50
+#define IN11_2 51
+#define IN11_3 52
+#define IN11_4 53
+
+int buttonPins[12] = {
+  2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13
 };
 
 const int stepsPerMotorRevolution = 32;  //No of steps per internal revolution of motor,
@@ -78,7 +85,7 @@ const int stepsPerState = 128;
 
 // initialize the stepper library on pins, Motor rev steps, "Firing" sequence 1-3-2-4
 // Ex: Stepper stepper0(stepsPerMotorRevolution, IN0_1, IN0_3, IN0_2, IN0_4);
-Stepper steppers[11] = {
+Stepper steppers[12] = {
   Stepper(stepsPerMotorRevolution, IN0_1, IN0_3, IN0_2, IN0_4),
   Stepper(stepsPerMotorRevolution, IN1_1, IN1_3, IN1_2, IN1_4),
   Stepper(stepsPerMotorRevolution, IN2_1, IN2_3, IN2_2, IN2_4),
@@ -89,12 +96,13 @@ Stepper steppers[11] = {
   Stepper(stepsPerMotorRevolution, IN7_1, IN7_3, IN7_2, IN7_4),
   Stepper(stepsPerMotorRevolution, IN8_1, IN8_3, IN8_2, IN8_4),
   Stepper(stepsPerMotorRevolution, IN9_1, IN9_3, IN9_2, IN9_4),
-  Stepper(stepsPerMotorRevolution, IN10_1, IN10_3, IN10_2, IN10_4)
+  Stepper(stepsPerMotorRevolution, IN10_1, IN10_3, IN10_2, IN10_4),
+  Stepper(stepsPerMotorRevolution, IN11_1, IN11_3, IN11_2, IN11_4)
 };
 
-int currentStates[11];
+int currentStates[12];
 
-int pos[11];
+int pos[12];
 
 bool calibrated = false;
 bool identified = false;
@@ -110,13 +118,13 @@ void setup() {
   }
 
   for (int i = 0; i < NUM_MODULES; i++) {
-    steppers[i].setSpeed(500);
+    steppers[i].setSpeed(RUNNING_SPEED);
   }
 
   // Not sure if necessary, may be able to assign static device locations instead.
   // identify();
 }
-
+ 
 void calibrateMotors() {
   for (int i = 0; i < NUM_MODULES; i++) {
     resetToZeroPosition(i);
@@ -127,7 +135,7 @@ void calibrateMotors() {
 void resetToZeroPosition(int module) {
   int buttonState = 0;
 
-  steppers[module].setSpeed(200);
+  steppers[module].setSpeed(250);
 
   while (buttonState < 1) {
     buttonState += digitalRead(buttonPins[module]);
@@ -137,10 +145,9 @@ void resetToZeroPosition(int module) {
     buttonState += digitalRead(buttonPins[module]);
     if (buttonState > 0) {
       currentStates[module] = 0;
-      steppers[module].setSpeed(500);
+      steppers[module].setSpeed(RUNNING_SPEED);
       return;
     }
-    delay(50);
     steppers[module].step(-10);
   }
 }

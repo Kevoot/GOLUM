@@ -1,6 +1,7 @@
 let haveEvents = "ongamepadconnected" in window;
 let controllers = {};
 let currentSelection = 0;
+let currentSection = 0;
 let disableInputFlag = false;
 let inputTimeout;
 
@@ -34,6 +35,13 @@ function changeSelection(newSelection) {
     $("#overlay" + currentSelection).toggleClass("projectSelected");
     $("#overlay" + newSelection).toggleClass("projectSelected");
     currentSelection = newSelection;
+}
+
+function changeSection(newSection) {
+    $("html,body").animate({
+        scrollTop: $("#section" + newSection).offset().top
+     });
+    currentSection = newSection;
 }
 
 
@@ -83,6 +91,15 @@ function updateStatus() {
                         url: "http://localhost:3000/randomize"
                     });
                 }
+                else if (currentSelection === 1) {
+                    window.location.href = "./projectinformation.html";
+                }
+                else if (currentSelection === 2) {
+                    window.location.href = "./credits.html";
+                }
+                else if (currentSelection === 3) {
+                    window.location.href = "./softwareinformation.html";
+                }
             }
         }
 
@@ -92,6 +109,12 @@ function updateStatus() {
             }
             else if (controller.axes[0] === JOY_RIGHT) {
                 move("R");
+            }
+            else if (controller.axes[1] === JOY_DOWN) {
+                move("D");
+            }
+            else if (controller.axes[1] === JOY_UP) {
+                move("U");
             }
         }
     }
@@ -107,15 +130,24 @@ function move(direction) {
     );
 
     let newSelection = currentSelection;
+    let newSection = currentSection;
 
     if (direction === "L" && currentSelection > 0) {
         newSelection--;
+        changeSelection(newSelection);
     }
     else if (direction === "R" && currentSelection < 3) {
         newSelection++;
+        changeSelection(newSelection);
     }
-
-    changeSelection(newSelection);
+    else if (direction === "U" && currentSelection > 0) {
+        newSection--;
+        changeSection(newSection);
+    }
+    else if (direction === "D" && currentSelection > 0) {
+        newSection++;
+        changeSection(newSection);
+    }
 }
 
 function scangamepads() {
